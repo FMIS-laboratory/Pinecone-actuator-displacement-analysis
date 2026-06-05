@@ -25,6 +25,26 @@ VIDEO_NAME = "pinecone2.mp4"
 DISPLAY_SCALE = 0.4
 PIXELS_PER_MM = 9.8611  # ImageJ calibration value (px/mm)
 
+# Use this when the preview appears rotated or upside down.
+# Options: None, "rotate_90_clockwise", "rotate_90_counterclockwise", "rotate_180",
+#          "flip_horizontal", "flip_vertical"
+FRAME_ORIENTATION = "rotate_90_clockwise"
+
+def correct_frame_orientation(frame):
+    if FRAME_ORIENTATION is None:
+        return frame
+    if FRAME_ORIENTATION == "rotate_90_clockwise":
+        return cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+    if FRAME_ORIENTATION == "rotate_90_counterclockwise":
+        return cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    if FRAME_ORIENTATION == "rotate_180":
+        return cv2.rotate(frame, cv2.ROTATE_180)
+    if FRAME_ORIENTATION == "flip_horizontal":
+        return cv2.flip(frame, 1)
+    if FRAME_ORIENTATION == "flip_vertical":
+        return cv2.flip(frame, 0)
+    raise ValueError(f"Unknown FRAME_ORIENTATION: {FRAME_ORIENTATION}")
+
 # Preview and annotation settings
 SAVE_VIDEO_ORIGINAL_SIZE = True
 POINT_RADIUS = 14
@@ -64,6 +84,12 @@ if not video_path.exists():
 
 cap = cv2.VideoCapture(str(video_path))
 
+try:
+    cap.set(cv2.CAP_PROP_ORIENTATION_AUTO, 0)
+except Exception:
+    pass
+
+
 if not cap.isOpened():
     raise RuntimeError("Video file could not be opened.")
 
@@ -77,6 +103,8 @@ ret, first_frame = cap.read()
 
 if not ret:
     raise RuntimeError("Could not read first frame.")
+
+first_frame = correct_frame_orientation(first_frame)
 
 # Select the region used for manual point picking
 
@@ -265,6 +293,8 @@ while True:
     if not ret:
         print("End of video or failed to read frame.")
         break
+
+    frame = correct_frame_orientation(frame)
 
     frame_idx += 1
 
